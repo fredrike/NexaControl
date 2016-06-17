@@ -80,6 +80,12 @@ uint64_t NexaSelfLearningReceiver::receiveSignal(uint32_t* transmitter, bool* on
  
     if (bitsReceived % 2 == 1){    //received the second bit in a pair
       if (prevBit == bit){ // only "01" or "10" ok
+        if (bitsReceived == 55){
+        #ifdef DEBUG
+          Serial.println("NEXA Receiver: ERROR, received a faulty pulse pair at position 55, will try to fix it.");
+        #endif
+          bit = ~bit;
+        } else{
         #ifdef DEBUG
         Serial.println("NEXA Receiver: ERROR, received a faulty pulse pair.");
         break;
@@ -87,6 +93,7 @@ uint64_t NexaSelfLearningReceiver::receiveSignal(uint32_t* transmitter, bool* on
         if(rxLED != NULL){digitalWrite(rxLED, LOW);}
         return 0;
         #endif
+        }
       }    
       receivedData <<= 1;
       receivedData |= prevBit;
@@ -113,6 +120,15 @@ uint64_t NexaSelfLearningReceiver::receiveSignal(uint32_t* transmitter, bool* on
       if(on != NULL){*on = (receivedData >> 4) & 0x01;}
       if(channel != NULL){*channel = receivedData & 0x0F;}
       if(dim != NULL){*dim = -1;}
+  }else if(bitsReceived == 70){
+      #ifdef DEBUG
+      Serial.print("NEXA Receiver: INFO, Received a signal with 70 pulses (35 bits) of data (with dim).");
+      #endif
+      if(transmitter != NULL){*transmitter = receivedData >> 9;}
+      if(group != NULL){*group = (receivedData >> 8) & 0x01;}
+      if(on != NULL){*on = (receivedData >> 7) & 0x01;}
+      if(channel != NULL){*channel = (receivedData >> 4) & 0x0F;}
+      if(dim != NULL){*dim = receivedData & 0x0F;}
   }else if(bitsReceived == 72){
       #ifdef DEBUG
       Serial.println("NEXA Receiver: INFO, Received a signal with 72 pulses (36 bits) of data (with dim).");
